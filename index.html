@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแจ้งซ่อมคอมพิวเตอร์และติดตามสถานะ</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .stepper-item { text-align: center; position: relative; flex: 1; }
+        .stepper-item::before {
+            position: absolute; content: ""; border-bottom: 3px solid #dee2e6;
+            width: 100%; top: 20px; left: -50%; z-index: 1;
+        }
+        .stepper-item:first-child::before { content: none; }
+        .stepper-icon {
+            width: 42px; height: 42px; border-radius: 50%; background: #e9ecef;
+            display: inline-flex; align-items: center; justify-content: center;
+            position: relative; z-index: 2; font-weight: bold; color: #6c757d;
+        }
+        .stepper-item.active .stepper-icon { background: #0d6efd; color: #fff; }
+        .stepper-item.completed .stepper-icon { background: #198754; color: #fff; }
+        .stepper-item.completed::before { border-color: #198754; }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#">
+            <i class="bi bi-tools me-2"></i>IT Helpdesk System
+        </a>
+        <div class="navbar-nav ms-auto flex-row gap-2">
+            <button class="btn btn-light btn-sm fw-semibold" onclick="switchTab('report')">
+                <i class="bi bi-plus-circle me-1"></i> แจ้งซ่อม
+            </button>
+            <button class="btn btn-outline-light btn-sm" onclick="switchTab('tracking')">
+                <i class="bi bi-search me-1"></i> ติดตามสถานะ
+            </button>
+            <button class="btn btn-warning btn-sm fw-semibold text-dark" onclick="switchTab('admin')">
+                <i class="bi bi-person-gear me-1"></i> มุมมองช่าง/แอดมิน
+            </button>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+
+    <!-- ================== ส่วนที่ 1: ฟอร์มแจ้งซ่อม ================== -->
+    <div id="section-report">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <span class="badge bg-primary-subtle text-primary fs-6 px-3 py-2 rounded-pill mb-2">Service Request</span>
+                            <h4 class="fw-bold">แบบฟอร์มแจ้งซ่อมอุปกรณ์คอมพิวเตอร์</h4>
+                            <p class="text-muted small">กรอกรายละเอียดปัญหาเพื่อส่งต่อให้ทีมช่างดำเนินการ</p>
+                        </div>
+                        <form id="repairForm" onsubmit="submitRepair(event)">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">ชื่อผู้แจ้ง</label>
+                                    <input type="text" id="userName" class="form-control" placeholder="เช่น นายสมชาย สายไอที" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">แผนก / ห้องปฏิบัติการ</label>
+                                    <input type="text" id="userDept" class="form-control" placeholder="เช่น แผนกบัญชี ชั้น 3" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">อุปกรณ์ที่เสียหาย</label>
+                                    <select id="deviceType" class="form-select" required>
+                                        <option value="">เลือกอุปกรณ์...</option>
+                                        <option value="คอมพิวเตอร์ตั้งโต๊ะ (PC)">คอมพิวเตอร์ตั้งโต๊ะ (PC)</option>
+                                        <option value="โน้ตบุ๊ก (Notebook)">โน้ตบุ๊ก (Notebook)</option>
+                                        <option value="เครื่องพิมพ์ (Printer)">เครื่องพิมพ์ (Printer)</option>
+                                        <option value="ระบบเครือข่าย/เน็ตเวิร์ก">ระบบเครือข่าย/เน็ตเวิร์ก</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">หมายเลขครุภัณฑ์ / ชื่อเครื่อง</label>
+                                    <input type="text" id="deviceCode" class="form-control" placeholder="เช่น PC-ACC-01" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">รายละเอียดอาการเสีย</label>
+                                    <textarea id="problemDesc" class="form-control" rows="3" placeholder="ระบุอาการให้ชัดเจน เช่น เปิดเครื่องติดแต่จอดับ มีเสียงบี๊บ 3 ครั้ง" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">แนบรูปถ่ายหน้าจอหรืออาการเสีย</label>
+                                    <input type="file" class="form-control" accept="image/*">
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold rounded-3">
+                                        <i class="bi bi-send-fill me-1"></i> ส่งข้อมูลแจ้งซ่อม
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== ส่วนที่ 2: ติดตามสถานะ (Timeline) ================== -->
+    <div id="section-tracking" style="display: none;">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- กล่องค้นหา -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-search text-primary me-2"></i>ตรวจสอบสถานะงานซ่อม</h5>
+                        <div class="input-group">
+                            <input type="text" id="searchTicket" class="form-control form-control-lg" placeholder="พิมพ์รหัส Ticket เช่น REP-2026-001">
+                            <button class="btn btn-primary px-4 fw-semibold" onclick="searchJob()">ค้นหา</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- กล่องแสดงไทม์ไลน์ -->
+                <div id="trackResult" class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                            <div>
+                                <span class="text-muted small">รหัสงานแจ้งซ่อม</span>
+                                <h4 class="fw-bold text-primary mb-0" id="ticketDisplay">REP-2026-001</h4>
+                            </div>
+                            <span class="badge fs-6 px-3 py-2" id="statusBadge">กำลังดำเนินการ</span>
+                        </div>
+
+                        <!-- Stepper Timeline -->
+                        <div class="d-flex justify-content-between my-4" id="stepper">
+                            <div class="stepper-item completed" id="step1">
+                                <div class="stepper-icon"><i class="bi bi-check-lg"></i></div>
+                                <div class="small mt-2 fw-semibold">แจ้งซ่อมแล้ว</div>
+                            </div>
+                            <div class="stepper-item completed" id="step2">
+                                <div class="stepper-icon"><i class="bi bi-check-lg"></i></div>
+                                <div class="small mt-2 fw-semibold">มอบหมายช่าง</div>
+                            </div>
+                            <div class="stepper-item active" id="step3">
+                                <div class="stepper-icon">3</div>
+                                <div class="small mt-2 fw-semibold">กำลังดำเนินการ</div>
+                            </div>
+                            <div class="stepper-item" id="step4">
+                                <div class="stepper-icon">4</div>
+                                <div class="small mt-2 fw-semibold">ซ่อมเสร็จสิ้น</div>
+                            </div>
+                        </div>
+
+                        <!-- รายละเอียดของงาน -->
+                        <div class="bg-light p-3 rounded-3 mt-4">
+                            <div class="row g-2 small">
+                                <div class="col-6"><strong>ผู้แจ้ง:</strong> <span id="detailUser">นายสมชาย สายไอที</span></div>
+                                <div class="col-6"><strong>อุปกรณ์:</strong> <span id="detailDevice">คอมพิวเตอร์ตั้งโต๊ะ (PC)</span></div>
+                                <div class="col-6"><strong>แผนก:</strong> <span id="detailDept">บัญชี ชั้น 3</span></div>
+                                <div class="col-6"><strong>ช่างผู้ดูแล:</strong> <span id="detailTech">ช่างวิชัย สารสนเทศ</span></div>
+                                <div class="col-12 mt-2"><strong>อาการเสีย:</strong> <span id="detailProblem">เปิดเครื่องติดแต่ไม่มีภาพออกจอภาพ</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== ส่วนที่ 3: มุมมองของช่าง/แอดมิน ================== -->
+    <div id="section-admin" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-warning me-2"></i>ศูนย์ควบคุมงานซ่อม (Technician Hub)</h4>
+                <p class="text-muted small mb-0">จำลองหน้าจอสำหรับให้ช่างกดอัปเดตสถานะงานซ่อม</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="switchTab('report')">กลับหน้าผู้ใช้</button>
+        </div>
+
+        <!-- การ์ดตัวเลขอัตราสรุป (Dashboard Stats) -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 bg-primary text-white rounded-4 p-3 shadow-sm">
+                    <div class="small opacity-75">งานทั้งหมด</div>
+                    <h3 class="fw-bold mb-0" id="statTotal">3</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 bg-warning text-dark rounded-4 p-3 shadow-sm">
+                    <div class="small opacity-75">รอรับเรื่อง</div>
+                    <h3 class="fw-bold mb-0" id="statPending">1</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 bg-info text-white rounded-4 p-3 shadow-sm">
+                    <div class="small opacity-75">กำลังซ่อม</div>
+                    <h3 class="fw-bold mb-0" id="statProgress">1</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 bg-success text-white rounded-4 p-3 shadow-sm">
+                    <div class="small opacity-75">ซ่อมเสร็จแล้ว</div>
+                    <h3 class="fw-bold mb-0" id="statCompleted">1</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- ตารางจัดการงาน -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>รหัส Ticket</th>
+                            <th>ผู้แจ้ง / แผนก</th>
+                            <th>อุปกรณ์</th>
+                            <th>อาการเสีย</th>
+                            <th>สถานะปัจจุบัน</th>
+                            <th>จัดการสถานะ (ช่าง)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                        <!-- รายการจะถูกสร้างผ่าน JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ข้อมูลจำลองในระบบ (Mock Database)
+    let jobs = [
+        {
+            ticket: 'REP-2026-001',
+            user: 'นายสมชาย สายไอที',
+            dept: 'บัญชี ชั้น 3',
+            device: 'คอมพิวเตอร์ตั้งโต๊ะ (PC)',
+            code: 'PC-ACC-01',
+            desc: 'เปิดเครื่องติดแต่ไม่มีภาพออกจอภาพ',
+            tech: 'ช่างวิชัย สารสนเทศ',
+            step: 3, // 1=แจ้งแล้ว, 2=มอบหมาย, 3=กำลังซ่อม, 4=เสร็จสิ้น
+            status: 'กำลังดำเนินการ',
+            badgeClass: 'bg-info text-dark'
+        },
+        {
+            ticket: 'REP-2026-002',
+            user: 'น.ส.วิภาดา ยอดขยัน',
+            dept: 'ธุรการ ห้อง 201',
+            device: 'เครื่องพิมพ์ (Printer)',
+            code: 'PRT-ADM-04',
+            desc: 'กระดาษติดบ่อยและหมึกพิมพ์ออกมาเป็นแถบดำ',
+            tech: 'ยังไม่ระบุ',
+            step: 1,
+            status: 'รอรับเรื่อง',
+            badgeClass: 'bg-warning text-dark'
+        },
+        {
+            ticket: 'REP-2026-003',
+            user: 'อาจารย์ธนกร',
+            dept: 'แผนกช่างยนต์',
+            device: 'โน้ตบุ๊ก (Notebook)',
+            code: 'NB-ENG-08',
+            desc: 'ลง Windows ใหม่ และลงโปรแกรมเขียนแบบ CAD',
+            tech: 'ช่างวิชัย สารสนเทศ',
+            step: 4,
+            status: 'ซ่อมเสร็จสิ้น',
+            badgeClass: 'bg-success'
+        }
+    ];
+
+    // ฟังก์ชันสลับหน้า Tab
+    function switchTab(tab) {
+        document.getElementById('section-report').style.display = (tab === 'report') ? 'block' : 'none';
+        document.getElementById('section-tracking').style.display = (tab === 'tracking') ? 'block' : 'none';
+        document.getElementById('section-admin').style.display = (tab === 'admin') ? 'block' : 'none';
+        if (tab === 'admin') renderAdminTable();
+    }
+
+    // ฟังก์ชันส่งฟอร์มแจ้งซ่อม
+    function submitRepair(e) {
+        e.preventDefault();
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        const newTicket = `REP-2026-${randomNum}`;
+
+        const newJob = {
+            ticket: newTicket,
+            user: document.getElementById('userName').value,
+            dept: document.getElementById('userDept').value,
+            device: document.getElementById('deviceType').value,
+            code: document.getElementById('deviceCode').value,
+            desc: document.getElementById('problemDesc').value,
+            tech: 'รอการมอบหมาย',
+            step: 1,
+            status: 'รอรับเรื่อง',
+            badgeClass: 'bg-warning text-dark'
+        };
+
+        jobs.unshift(newJob);
+        alert(`🎉 แจ้งซ่อมสำเร็จ!\nรหัสติดตามของคุณคือ: ${newTicket}\nระบบจะพาไปยังหน้าติดตามสถานะ`);
+        
+        document.getElementById('repairForm').reset();
+        document.getElementById('searchTicket').value = newTicket;
+        renderTracking(newJob);
+        switchTab('tracking');
+    }
+
+    // ฟังก์ชันค้นหางาน
+    function searchJob() {
+        const query = document.getElementById('searchTicket').value.trim();
+        const found = jobs.find(j => j.ticket.toLowerCase() === query.toLowerCase());
+        if (found) {
+            renderTracking(found);
+        } else {
+            alert('❌ ไม่พบข้อมูลรหัสงานนี้ในระบบ');
+        }
+    }
+
+    // แสดงผลหน้าไทม์ไลน์
+    function renderTracking(job) {
+        document.getElementById('ticketDisplay').innerText = job.ticket;
+        document.getElementById('detailUser').innerText = job.user;
+        document.getElementById('detailDept').innerText = job.dept;
+        document.getElementById('detailDevice').innerText = `${job.device} (${job.code})`;
+        document.getElementById('detailTech').innerText = job.tech;
+        document.getElementById('detailProblem').innerText = job.desc;
+
+        const badge = document.getElementById('statusBadge');
+        badge.className = `badge fs-6 px-3 py-2 ${job.badgeClass}`;
+        badge.innerText = job.status;
+
+        // อัปเดต Stepper Icon
+        for (let i = 1; i <= 4; i++) {
+            const stepEl = document.getElementById(`step${i}`);
+            stepEl.className = 'stepper-item';
+            if (i < job.step) {
+                stepEl.classList.add('completed');
+                stepEl.querySelector('.stepper-icon').innerHTML = '<i class="bi bi-check-lg"></i>';
+            } else if (i === job.step) {
+                stepEl.classList.add('active');
+                stepEl.querySelector('.stepper-icon').innerText = i;
+            } else {
+                stepEl.querySelector('.stepper-icon').innerText = i;
+            }
+        }
+    }
+
+    // เรนเดอร์หน้ารวมของช่าง
+    function renderAdminTable() {
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = '';
+
+        let pending = 0, progress = 0, completed = 0;
+
+        jobs.forEach((j, index) => {
+            if (j.step === 1) pending++;
+            if (j.step === 2 || j.step === 3) progress++;
+            if (j.step === 4) completed++;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold">${j.ticket}</td>
+                    <td>${j.user}<br><small class="text-muted">${j.dept}</small></td>
+                    <td>${j.device}</td>
+                    <td><small>${j.desc}</small></td>
+                    <td><span class="badge ${j.badgeClass}">${j.status}</span></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="updateStatus(${index}, 3, 'กำลังดำเนินการ', 'bg-info text-dark')">กำลังซ่อม</button>
+                            <button class="btn btn-outline-success" onclick="updateStatus(${index}, 4, 'ซ่อมเสร็จสิ้น', 'bg-success')">เสร็จสิ้น</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('statTotal').innerText = jobs.length;
+        document.getElementById('statPending').innerText = pending;
+        document.getElementById('statProgress').innerText = progress;
+        document.getElementById('statCompleted').innerText = completed;
+    }
+
+    // ฟังก์ชันที่ช่างกดเปลี่ยนสถานะ
+    function updateStatus(index, newStep, newStatus, newBadge) {
+        jobs[index].step = newStep;
+        jobs[index].status = newStatus;
+        jobs[index].badgeClass = newBadge;
+        if (newStep >= 2 && jobs[index].tech === 'ยังไม่ระบุ') {
+            jobs[index].tech = 'ช่างวิชัย สารสนเทศ';
+        }
+        renderAdminTable();
+        alert(`อัปเดตสถานะงาน ${jobs[index].ticket} เป็น "${newStatus}" เรียบร้อยแล้ว`);
+    }
+
+    // เริ่มต้นให้แสดงงานแรกในหน้าติดตามสถานะ
+    renderTracking(jobs[0]);
+</script>
+</body>
+</html>
